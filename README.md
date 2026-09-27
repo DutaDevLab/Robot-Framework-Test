@@ -100,7 +100,7 @@ In both cases: **ownership of the directory/repository belongs to the test team*
 
 ### CODEOWNERS
 
-```
+```text
 # .github/CODEOWNERS
 # Test files require test team approval,
 # regardless of who creates the Pull Request
@@ -108,6 +108,21 @@ In both cases: **ownership of the directory/repository belongs to the test team*
 *.robot                    @company/test-engineers
 /resources/keywords/       @company/test-engineers
 ```
+
+#### How it works in practice:
+
+When combined with branch protection rules ("Require review from Code Owners"), the `CODEOWNERS` file acts as an automated gatekeeper.
+
+**What the specific rules mean:**
+- `/tests/ @company/test-engineers` — Any file modified within the `/tests/` directory (and its subdirectories) is owned by the test team.
+- `*.robot @company/test-engineers` — Any file ending in `.robot` modified anywhere in the repository requires test team approval.
+- `/resources/keywords/ @company/test-engineers` — Modifying custom keyword definitions impacts test execution, so it requires the same approval.
+
+**The Step-by-Step Workflow:**
+1. **Developer opens a PR:** A developer modifies application code but also alters a test file.
+2. **Automatic Review Request:** GitHub checks the `CODEOWNERS` file and automatically assigns the `@company/test-engineers` team as mandatory reviewers.
+3. **Blocked Merge:** Even if other developers approve the PR, the "Merge pull request" button remains blocked until at least one member of the test team formally approves the changes. A developer cannot approve their own PR.
+4. **ASPICE / ISO 26262 Compliance:** This provides technical enforcement of the independence of testing from development. It ensures a developer cannot silently alter, weaken, or remove a test to force a passing CI build. Every test modification leaves an audit trail guaranteeing it was reviewed by a dedicated test engineer.
 
 ### Repository Settings (GitHub Ruleset)
 

@@ -38,9 +38,12 @@ flowchart TD
 
 The link between Codebeamer and a test is realized via the requirement ID specified in the `[Tags]` of the Robot Framework test (e.g., `REQ-1234`). This ID is then also transferred to the Test Run result record, creating a complete chain:
 
-```
-Requirement (CB) → Test Case (Robot Framework, GitHub) → Implementation (commit)
-→ Execution (CI/CD + CANoe) → Result (Test Run in CB)
+```mermaid
+flowchart LR
+    A[Requirement<br/>CB] --> B[Test Case<br/>Robot Framework, GitHub]
+    B --> C[Implementation<br/>commit]
+    C --> D[Execution<br/>CI/CD + CANoe]
+    D --> E[Result<br/>Test Run in CB]
 ```
 
 ---

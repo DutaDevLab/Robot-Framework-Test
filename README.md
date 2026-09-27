@@ -77,6 +77,25 @@ GitHub does not distinguish between a "developer" and a "test engineer" as roles
 | Separate `test-automation` repository | Tests physically separated from the SW code, custom lifecycle and permissions. | Stricter ASPICE audit, larger team. |
 | Shared repository, `/tests` directory | Tests alongside the SW code, separated only via CODEOWNERS. | Smaller project, tight integration with the build. |
 
+#### Option 1: Separate Repository
+```text
+organization/
+├── sw-project-repo/         # Developers own this repository
+│   └── src/                 # SW implementation
+│
+└── test-automation-repo/    # Test team owns this repository
+    └── tests/               # Test cases and automation code
+```
+
+#### Option 2: Shared Repository
+```text
+organization/
+└── shared-repo/
+    ├── src/                 # Developers own this directory
+    └── tests/               # Protected by CODEOWNERS (Test team owns this)
+        └── ...
+```
+
 In both cases: **ownership of the directory/repository belongs to the test team**, developers have `write` access only to the feature branch, never directly to a protected branch.
 
 ### CODEOWNERS

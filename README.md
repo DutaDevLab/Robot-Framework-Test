@@ -1,110 +1,110 @@
-# 🤖 Automatizácia testovania embedded softvéru — architektúra a governance 🧪
+# 🤖 Embedded Software Testing Automation — Architecture and Governance 🧪
 
-Dokumentácia architektúry nástrojového reťazca (Codebeamer, GitHub, CI/CD, CANoe) a pravidiel oddelenia vývoja od testovania v GitHub, tak aby bola zachovaná obojsmerná trasovateľnosť vyžadovaná **ASPICE** a **ISO 26262**.
+Documentation of the toolchain architecture (Codebeamer, GitHub, CI/CD, CANoe) and the rules for separating development from testing in GitHub, ensuring bi-directional traceability required by **ASPICE** and **ISO 26262**.
 
-## 📋 Obsah
+## 📋 Table of Contents
 
-1. [Architektúra riešenia](#1-architektúra-riešenia)
-2. [Trasovateľnosť a mapovanie na ASPICE / ISO 26262](#2-trasovateľnosť-a-mapovanie-na-aspice--iso-26262)
-3. [Oddelenie vývoja a testovania v GitHub](#3-oddelenie-vývoja-a-testovania-v-github)
-4. [Workflow schvaľovania zmeny testu](#4-workflow-schvaľovania-zmeny-testu)
-5. [Checklist pre review zmeny testu](#5-checklist-pre-review-zmeny-testu)
-6. [Príklady](#6-príklady)
+1. [Solution Architecture](#1-solution-architecture)
+2. [Traceability and Mapping to ASPICE / ISO 26262](#2-traceability-and-mapping-to-aspice--iso-26262)
+3. [Separation of Development and Testing in GitHub](#3-separation-of-development-and-testing-in-github)
+4. [Test Change Approval Workflow](#4-test-change-approval-workflow)
+5. [Test Change Review Checklist](#5-test-change-review-checklist)
+6. [Examples](#6-examples)
 
 ---
 
-## 🏗️ 1. Architektúra riešenia
+## 🏗️ 1. Solution Architecture
 
-Cieľom je prepojiť požiadavky, testy písané v Robot Frameworku, GitHub repozitár a review testov (Codebeamer alebo GitHub), a následne prepojiť testy a ich výsledky s test runom v Codebeameri alebo priamo v GitHub.
+The goal is to link requirements, tests written in Robot Framework, the GitHub repository, and test reviews (Codebeamer or GitHub), and subsequently link tests and their results with a test run in Codebeamer or directly in GitHub.
 
 ```mermaid
 flowchart TD
-    A[Codebeamer<br/>Požiadavky a testové špecifikácie] --> B[GitHub<br/>Robot Framework testy, code review cez PR]
+    A[Codebeamer<br/>Requirements and Test Specifications] --> B[GitHub<br/>Robot Framework tests, code review via PR]
     B --> C[CI/CD pipeline<br/>GitHub Actions runner]
-    C --> D[CANoe + HIL / laboratórium<br/>Vykonanie testov, riadenie HW]
-    D --> E[Výsledky testov<br/>Zapísané späť do Codebeameru]
-    E -.trasovateľnosť.-> A
+    C --> D[CANoe + HIL / Laboratory<br/>Test execution, HW control]
+    D --> E[Test Results<br/>Written back to Codebeamer]
+    E -.traceability.-> A
 ```
 
-| Krok | Popis |
+| Step | Description |
 |---|---|
-| 1. Codebeamer | Zdroj pravdy pre požiadavky a testové špecifikácie, baseline verzie. |
-| 2. GitHub | Robot Framework testy, implementácia, code review cez Pull Request. |
-| 3. CI/CD pipeline | GitHub Actions self-hosted runner, spúšťa testy pri merge/tagu. |
-| 4. CANoe + HIL/laboratórium | Vykonanie testov, riadenie laboratórneho HW (napr. cez SCPI/TCP-IP). |
-| 5. Výsledky testov | Parsovanie `output.xml` a zápis Test Run / výsledku späť do Codebeameru cez REST API. |
+| 1. Codebeamer | Source of truth for requirements and test specifications, baseline versions. |
+| 2. GitHub | Robot Framework tests, implementation, code review via Pull Request. |
+| 3. CI/CD pipeline | GitHub Actions self-hosted runner, triggers tests on merge/tag. |
+| 4. CANoe + HIL/Laboratory | Test execution, laboratory HW control (e.g., via SCPI/TCP-IP). |
+| 5. Test Results | Parsing `output.xml` and writing the Test Run / result back to Codebeamer via REST API. |
 
-### Requirement ID a tagovanie
+### Requirement ID and Tagging
 
-Prepojenie medzi Codebeamerom a testom sa realizuje cez requirement ID uvedené v `[Tags]` Robot Framework testu (napr. `REQ-1234`). Toto ID sa následne prenáša aj do zápisu Test Run výsledku, čím vzniká plný reťazec:
+The link between Codebeamer and a test is realized via the requirement ID specified in the `[Tags]` of the Robot Framework test (e.g., `REQ-1234`). This ID is then also transferred to the Test Run result record, creating a complete chain:
 
 ```
-Požiadavka (CB) → Testový prípad (Robot Framework, GitHub) → Implementácia (commit)
-→ Vykonanie (CI/CD + CANoe) → Výsledok (Test Run v CB)
+Requirement (CB) → Test Case (Robot Framework, GitHub) → Implementation (commit)
+→ Execution (CI/CD + CANoe) → Result (Test Run in CB)
 ```
 
 ---
 
-## 🔗 2. Trasovateľnosť a mapovanie na ASPICE / ISO 26262
+## 🔗 2. Traceability and Mapping to ASPICE / ISO 26262
 
-| Požiadavka | Ako je pokrytá |
+| Requirement | How it is covered |
 |---|---|
-| Obojsmerná trasovateľnosť | Requirement ID tag ↔ Codebeamer Test Case ↔ Test Run. |
-| Konfiguračný manažment | Git tagy/releases zosynchronizované s baseline v Codebeameri. |
-| Evidencia peer review | Schválenia Pull Requestov v GitHub, prípadne review workflow v Codebeameri. |
-| Reprodukovateľnosť výsledkov | CI/CD logy a artefakty (`log.html`, HW konfigurácia) archivované per build. |
-| Impact analýza pri zmene požiadavky | Codebeamer zobrazí naviazané testy pri zmene requirement work item. |
+| Bi-directional traceability | Requirement ID tag ↔ Codebeamer Test Case ↔ Test Run. |
+| Configuration management | Git tags/releases synchronized with the baseline in Codebeamer. |
+| Peer review evidence | Pull Request approvals in GitHub, or review workflow in Codebeamer. |
+| Result reproducibility | CI/CD logs and artifacts (`log.html`, HW configuration) archived per build. |
+| Impact analysis on requirement change | Codebeamer displays linked tests when a requirement work item changes. |
 
 ---
 
-## 🛡️ 3. Oddelenie vývoja a testovania v GitHub
+## 🛡️ 3. Separation of Development and Testing in GitHub
 
-### Princíp
+### Principle
 
-GitHub nerozlišuje "developera" a "test inžiniera" ako role – rozlišuje len teamy a oprávnenia. Aby zmena testu nemohla prejsť bez vedomia test inžiniera, musia platiť súčasne tri veci:
+GitHub does not distinguish between a "developer" and a "test engineer" as roles – it only distinguishes teams and permissions. For a test change not to pass without the test engineer's knowledge, three things must apply simultaneously:
 
-1. Developer nemôže priamo pushnúť zmenu do chránenej vetvy (`main`/`release`) – iba cez Pull Request.
-2. Akákoľvek zmena súboru v `/tests` musí mať schválenie od `test-team` (CODEOWNERS) – bez ohľadu na to, kto PR založil.
-3. Ak niekto pridá nový commit po tom, čo bol PR už schválený, staré schválenie sa automaticky zruší (*dismiss stale approvals*) – takže dodatočná úprava po schválení nemôže prejsť ďalej bez nového review.
+1. A developer cannot directly push changes to a protected branch (`main`/`release`) – only via Pull Request.
+2. Any change to a file in `/tests` must be approved by the `test-team` (CODEOWNERS) – regardless of who created the PR.
+3. If someone adds a new commit after the PR has already been approved, the old approval is automatically canceled (*dismiss stale approvals*) – so an additional modification after approval cannot proceed without a new review.
 
-### Štruktúra repozitára
+### Repository Structure
 
-| Možnosť | Popis | Kedy použiť |
+| Option | Description | When to use |
 |---|---|---|
-| Samostatný repozitár `test-automation` | Testy fyzicky oddelené od SW kódu, vlastný lifecycle a oprávnenia. | Prísnejší ASPICE audit, väčší tím. |
-| Zdieľaný repozitár, adresár `/tests` | Testy vedľa SW kódu, oddelenie iba cez CODEOWNERS. | Menší projekt, tesná previazanosť s buildom. |
+| Separate `test-automation` repository | Tests physically separated from the SW code, custom lifecycle and permissions. | Stricter ASPICE audit, larger team. |
+| Shared repository, `/tests` directory | Tests alongside the SW code, separated only via CODEOWNERS. | Smaller project, tight integration with the build. |
 
-V oboch prípadoch platí: **vlastníctvo adresára/repozitára patrí test tímu**, vývojári majú `write` prístup iba na feature branch, nikdy priamo na chránenú vetvu.
+In both cases: **ownership of the directory/repository belongs to the test team**, developers have `write` access only to the feature branch, never directly to a protected branch.
 
 ### CODEOWNERS
 
 ```
 # .github/CODEOWNERS
-# Testovacie súbory vyžadujú schválenie test tímu,
-# bez ohľadu na to, kto Pull Request založí
-/tests/                    @firma/test-engineers
-*.robot                    @firma/test-engineers
-/resources/keywords/       @firma/test-engineers
+# Test files require test team approval,
+# regardless of who creates the Pull Request
+/tests/                    @company/test-engineers
+*.robot                    @company/test-engineers
+/resources/keywords/       @company/test-engineers
 ```
 
-### Nastavenia repozitára (GitHub Ruleset)
+### Repository Settings (GitHub Ruleset)
 
-Settings → Rules → Rulesets, pre vetvu `main` a `release/*`:
+Settings → Rules → Rulesets, for the `main` and `release/*` branches:
 
-| Nastavenie | Hodnota | Dôvod |
+| Setting | Value | Reason |
 |---|---|---|
-| Require a pull request before merging | zapnuté | žiadny priamy push do chránenej vetvy |
-| Require review from Code Owners | zapnuté | vynucuje schválenie CODEOWNERS |
-| Required approvals | min. 1 | aspoň jedno nezávislé schválenie |
-| Dismiss stale approvals on new commits | zapnuté | zabraňuje dopushnutiu zmeny po schválení |
-| Require approval of the most recent push | zapnuté | autor nemôže schváliť vlastný posledný commit |
-| Require signed commits | odporúčané | jednoznačná identita autora zmeny |
-| Block force pushes | zapnuté | zabraňuje prepísaniu histórie |
-| Require linear history | zapnuté | čistá, auditovateľná história |
-| Do not allow bypassing | bez výnimky | ani repo admin neobíde pravidlá |
-| Restrict who can push | `release-manager`, CI účet | vylučuje priamy zásah kohokoľvek iného |
+| Require a pull request before merging | enabled | no direct push to the protected branch |
+| Require review from Code Owners | enabled | enforces CODEOWNERS approval |
+| Required approvals | min. 1 | at least one independent approval |
+| Dismiss stale approvals on new commits | enabled | prevents pushing changes after approval |
+| Require approval of the most recent push | enabled | the author cannot approve their own latest commit |
+| Require signed commits | recommended | clear identity of the change author |
+| Block force pushes | enabled | prevents history rewriting |
+| Require linear history | enabled | clean, auditable history |
+| Do not allow bypassing | no exceptions | not even a repo admin can bypass the rules |
+| Restrict who can push | `release-manager`, CI account | excludes direct intervention by anyone else |
 
-Príklad exportu rulesetu:
+Ruleset export example:
 
 ```json
 {
@@ -126,77 +126,77 @@ Príklad exportu rulesetu:
 }
 ```
 
-Prázdne `bypass_actors` je zámerné — nikto, vrátane adminov, nesmie pravidlo obísť.
+Empty `bypass_actors` is intentional — no one, including admins, is allowed to bypass the rule.
 
-### Ochrana release baseline (tagy)
+### Release Baseline Protection (Tags)
 
-Settings → Tag protection rules: vzor `v*.*.*` môže vytvárať/mazať iba `release-manager` team. Tag reprezentuje presnú verziu testov spustenú proti konkrétnemu SW buildu a musí zostať nemenný ako dôkaz pre audit.
+Settings → Tag protection rules: the pattern `v*.*.*` can only be created/deleted by the `release-manager` team. A tag represents the exact version of tests executed against a specific SW build and must remain immutable as evidence for an audit.
 
-### Evidencia pre audit
+### Audit Evidence
 
-- história Pull Requestov vrátane reviewerov, komentárov a času schválenia,
-- záznam o zamietnutých force-push pokusoch,
-- (GitHub Enterprise) Audit log so záznamom zmien oprávnení, rulesetov a merge udalostí.
+- Pull Request history including reviewers, comments, and approval times,
+- Record of rejected force-push attempts,
+- (GitHub Enterprise) Audit log recording changes in permissions, rulesets, and merge events.
 
-### Voliteľné rozšírenie: fork-based model
+### Optional Extension: Fork-based Model
 
-Pri väčšom alebo menej dôveryhodnom vývojárskom tíme môžu mať vývojári do test repozitára iba `read` prístup a zmeny navrhujú výhradne cez **fork + Pull Request**. Vývojár tak fyzicky nemá možnosť pushnúť branch priamo do repozitára — jediná cesta je PR z forku, ktorý prechádza rovnakým CODEOWNERS/ruleset mechanizmom.
+With a larger or less trusted development team, developers may only have `read` access to the test repository and propose changes exclusively via **fork + Pull Request**. The developer thus has no physical way to push a branch directly to the repository — the only path is a PR from a fork, which goes through the same CODEOWNERS/ruleset mechanism.
 
-### Zhrnutie zodpovednosti
+### Responsibility Summary
 
-| Rola | Oprávnenie v test repozitári |
+| Role | Permission in the test repository |
 |---|---|
-| Test inžinier (CODEOWNERS) | Write + schvaľovanie PR, vlastníctvo `/tests` |
-| Release manager | Správa tagov, výnimka pre merge do `release/*` |
-| Developer | Read, prípadne write len na feature branch/fork, žiadne právo mergovať bez schválenia |
-| CI service účet | Read pre checkout, write iba pre publikáciu výsledkov |
+| Test Engineer (CODEOWNERS) | Write + PR approval, ownership of `/tests` |
+| Release Manager | Tag management, exception for merge to `release/*` |
+| Developer | Read, or write only to feature branch/fork, no right to merge without approval |
+| CI service account | Read for checkout, write only for publishing results |
 
 ---
 
-## 🔄 4. Workflow schvaľovania zmeny testu
+## 🔄 4. Test Change Approval Workflow
 
 ```mermaid
 flowchart TD
-    A[Developer upraví test<br/>Push do feature branch] --> B[Otvorí Pull Request<br/>Voči main/release]
-    B --> C[CODEOWNERS pravidlo<br/>Vyžiada review test-teamu]
-    C --> D[Test inžinier reviewuje<br/>Schváli alebo zamietne PR]
-    D --> E{Nový commit<br/>po schválení?}
-    E -- Áno, schválenie sa zruší --> D
-    E -- Nie --> F[Merge do main/release<br/>Zmena je súčasťou baseline]
+    A[Developer modifies test<br/>Push to feature branch] --> B[Opens Pull Request<br/>Against main/release]
+    B --> C[CODEOWNERS rule<br/>Requests test-team review]
+    C --> D[Test engineer reviews<br/>Approves or rejects PR]
+    D --> E{New commit<br/>after approval?}
+    E -- Yes, approval is dismissed --> D
+    E -- No --> F[Merge to main/release<br/>Change becomes part of baseline]
 ```
 
-1. Developer upraví test a pushne zmenu do feature branch.
-2. Otvorí Pull Request voči vetve `main`/`release`.
-3. CODEOWNERS pravidlo automaticky vyžiada review od test-teamu.
-4. Test inžinier zmenu preskúma a schváli alebo zamietne PR.
-5. Rozhodovací bod — bol po schválení pridaný nový commit?
-   - **Áno** → schválenie sa automaticky zruší (*dismiss stale approval*) a proces sa vracia na krok 4.
-   - **Nie** → PR môže pokračovať na merge.
-6. Merge do `main`/`release` — zmena sa stáva súčasťou baseline.
+1. The developer modifies the test and pushes the change to a feature branch.
+2. Opens a Pull Request against the `main`/`release` branch.
+3. The CODEOWNERS rule automatically requests a review from the test-team.
+4. The test engineer reviews the change and approves or rejects the PR.
+5. Decision point — was a new commit added after approval?
+   - **Yes** → the approval is automatically canceled (*dismiss stale approval*) and the process returns to step 4.
+   - **No** → the PR can proceed to merge.
+6. Merge to `main`/`release` — the change becomes part of the baseline.
 
 ---
 
-## ✅ 5. Checklist pre review zmeny testu
+## ✅ 5. Test Change Review Checklist
 
-Kontrolné body, ktoré by mal test inžinier overiť pri každom Pull Requeste meniacom existujúci test:
+Checkpoints that a test engineer should verify for every Pull Request modifying an existing test:
 
-- **Súlad s požiadavkou** — test stále overuje presne to, čo hovorí naviazaný requirement (REQ-ID). Zmena očakávaného výsledku vyžaduje zodpovedajúcu zmenu v Codebeameri.
-- **Nezoslabenie assercie** — uvoľnenie tolerancie, zväčšenie timeoutu, zmena verdiktu z `Fail` na `Pass`/`Inconclusive` alebo odstránenie kontrolného kroku. Porovnať hodnoty priamo v diffe, nie len výsledný súbor.
-- **Zachovanie pokrytia** — úprava nesmie zmazať testovací krok alebo celý testovací prípad namiesto jeho opravy.
-- **Zdôvodnenie v PR popise** — musí byť jasné prečo sa test mení (oprava chyby, zmena požiadavky, refaktoring).
-- **Konzistencia s CI výsledkami** — test po zmene skutočne beží v CI a dáva očakávaný výsledok voči aktuálnemu SW buildu.
-- **Trasovateľnosť a dokumentácia** — tag/link na requirement, názov testu a dokumentačný komentár stále sedia s tým, čo test reálne robí.
+- **Alignment with the requirement** — the test still verifies exactly what the linked requirement (REQ-ID) states. Changing the expected result requires a corresponding change in Codebeamer.
+- **No assertion weakening** — relaxing tolerance, increasing timeout, changing the verdict from `Fail` to `Pass`/`Inconclusive`, or removing a verification step. Compare values directly in the diff, not just the final file.
+- **Coverage preservation** — the modification must not delete a test step or the entire test case instead of fixing it.
+- **Justification in PR description** — it must be clear why the test is changing (bug fix, requirement change, refactoring).
+- **Consistency with CI results** — the test actually runs in CI after the change and yields the expected result against the current SW build.
+- **Traceability and documentation** — the tag/link to the requirement, the test name, and the documentation comment still match what the test actually does.
 
 ---
 
-## 💡 6. Príklady
+## 💡 6. Examples
 
-### Robot Framework test s requirement ID tagom
+### Robot Framework test with requirement ID tag
 
 ```robotframework
 *** Test Cases ***
 Actuator Moves Within Expected Time
-    [Documentation]    Overuje, že aktuátor dosiahne cieľovú pozíciu do 500 ms
+    [Documentation]    Verifies that the actuator reaches the target position within 500 ms
     [Tags]    REQ-1234    ASIL-B
     Connect To CANoe
     Trigger Actuator Movement
@@ -204,7 +204,7 @@ Actuator Moves Within Expected Time
     Should Be True    ${elapsed} < 500
 ```
 
-### Zápis výsledku do Codebeameru cez REST API (Python, zjednodušené)
+### Writing the result to Codebeamer via REST API (Python, simplified)
 
 ```python
 import requests
@@ -233,7 +233,7 @@ def push_test_result(cb_url, token, test_case_id, requirement_id, verdict, build
         )
 ```
 
-### GitHub Actions workflow (výňatok)
+### GitHub Actions workflow (excerpt)
 
 ```yaml
 name: robot-tests
